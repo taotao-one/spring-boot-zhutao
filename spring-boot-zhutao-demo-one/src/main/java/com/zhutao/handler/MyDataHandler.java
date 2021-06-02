@@ -3,16 +3,52 @@ package com.zhutao.handler;
 
 import com.google.gson.Gson;
 import com.zhutao.bean.DataBean;
+import com.zhutao.service.DataService;
+import com.zhutao.util.HttpUrlConnectionUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.FileReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class MyDataHandler {
+    @Autowired
+    private DataService dataService;
+    //数据初始化
+
+    // 在服务器加载Servlet 时运行 且  只运行一次
+    @PostConstruct
+    public void saveData() throws InterruptedException {
+        List<DataBean> dataBeans = getData();
+        //mybatis-plus 提供了可用的方法
+        //删除全部数据  批量新增数据
+        dataService.remove(null);
+        dataService.saveBatch(dataBeans);
+    }
+
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+    @Scheduled(cron = "0 1 * * * ? ")
+    public void update(){
+        System.out.println("数据更新了");
+        System.out.println("当前时间"+dateFormat.format(new Date()));
+
+        List<DataBean> dataBeans = getData();
+        //mybatis-plus 提供了可用的方法
+        //删除全部数据  批量新增数据
+        dataService.remove(null);
+        dataService.saveBatch(dataBeans);
+    }
+
 
     public static String testStr = "{\"name\":\"duyi\"}";
-
+    private static String str = "https://view.inews.qq.com/g2/getOnsInfo?name=disease_h5";
     public static void main(String[] args) {
 //        Gson gson = new Gson();
 //        Map map = gson.fromJson(testStr, Map.class);
@@ -42,21 +78,27 @@ public class MyDataHandler {
 
         try {
             // 先通过io 读取数据
-            FileReader fr = new FileReader("spring-boot-zhutao-demo-one/tmp.txt");
-            char[] cBuf = new char[1024];
-            int cRead = 0;
+//            FileReader fr = new FileReader("spring-boot-zhutao-demo-one/tmp.txt");
+//            char[] cBuf = new char[1024];
+//            int cRead = 0;
+//
+//            StringBuilder builder = new StringBuilder();
+//            while ((cRead = fr.read(cBuf)) > 0) {
+//                builder.append(new String(cBuf, 0, cRead));
+//            }
+//            fr.close();
 
-            StringBuilder builder = new StringBuilder();
-            while ((cRead = fr.read(cBuf)) > 0) {
-                builder.append(new String(cBuf, 0, cRead));
-            }
-            fr.close();
+            String results = HttpUrlConnectionUtil.doGet(str);
 
 //          System.out.println(builder.toString());
 
             // 再通过gson 解析数据
             Gson gson = new Gson();
-            Map map = gson.fromJson(builder.toString(), Map.class);
+            Map strMap = gson.fromJson(results,Map.class);
+
+            String subStr =(String) strMap.get("data");
+
+            Map map = gson.fromJson(subStr.toString(), Map.class);
 //          System.out.println(map);
 
             ArrayList areaList = (ArrayList) map.get("areaTree");
@@ -64,9 +106,6 @@ public class MyDataHandler {
             Map dataMap = (Map) areaList.get(0);
 
             ArrayList childrenList = (ArrayList) dataMap.get("children");
-
-            System.out.println(childrenList);
-
 
             for (int i = 0; i < childrenList.size(); i++) {
                 Map tmp = (Map) childrenList.get(i);

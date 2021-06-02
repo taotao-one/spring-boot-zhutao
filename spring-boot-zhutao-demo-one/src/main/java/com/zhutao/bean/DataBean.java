@@ -1,13 +1,20 @@
 package com.zhutao.bean;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
+
+@TableName("epidemic")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DataBean {
+public class DataBean implements Serializable {
+    private static final long serialVersionUID = 675250593574236273L;
+
 
     // Alt + 7 查看类的方法
 
